@@ -1,3 +1,4 @@
+
 name: VOIDEX Android Build
 
 on:
@@ -12,49 +13,61 @@ permissions:
 
 jobs:
   build:
-    name: Compile VOIDEX APK
-
+    name: Build VOIDEX APK
     runs-on: ubuntu-24.04
 
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Accept Android licenses
+      - name: Install SDK Packages
         run: |
-          yes | sdkmanager --licenses
-
-      - name: Install Android dependencies
-        run: |
-          sdkmanager \
+          sdkmanager --install \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0" \
             "ndk;27.0.12077973" \
             "cmake;3.22.1"
 
-      - name: Install Gradle
+      - name: Verify Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          sdkmanager --list_installed
+          adb version
+          cmake --version
+
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Compile VOIDEX
+      - name: Build VOIDEX Debug APK
         run: |
           gradle --no-daemon --stacktrace assembleDebug
 
-      - name: Upload APK
+      - name: Verify APK
+        run: |
+          test -f app/build/outputs/apk/debug/app-debug.apk
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload VOIDEX APK
         uses: actions/upload-artifact@v4
         with:
-          name: VOIDEX-Android-APK
+          name: VOIDEX-ANDROID-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+          
